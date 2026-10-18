@@ -2119,6 +2119,20 @@ function bind() {
   $("menu-settings").addEventListener("click", () => openModal("Settings", settingsView()));
   $("menu-theme").addEventListener("click", () => $("theme").click());
   $("menu-shortcuts").addEventListener("click", () => note("Ctrl+N new, Ctrl+Enter send, Ctrl+S save, Ctrl+W close, Ctrl+Tab next", true));
+  const openD2i = (event) => {
+    event.preventDefault();
+    const url = "https://d2itechnology.com/";
+    guard(async () => {
+      try {
+        await rpc("OpenURL", { url });
+      } catch (error) {
+        if (!/unknown method/i.test(error.message || "")) throw error;
+        window.open(url, "_blank", "noopener");
+      }
+    });
+  };
+  $("powered-by").addEventListener("click", openD2i);
+  $("menu-d2i").addEventListener("click", openD2i);
   $("zoom-in").addEventListener("click", () => setZoomLevel(zoomLevel + 0.1));
   $("zoom-out").addEventListener("click", () => setZoomLevel(zoomLevel - 0.1));
   $("zoom-reset").addEventListener("click", () => setZoomLevel(1));

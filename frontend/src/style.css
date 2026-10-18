@@ -52,7 +52,7 @@ body {
 #app {
   display: grid;
   grid-template-columns: var(--side-width, 300px) 6px minmax(0, 1fr);
-  grid-template-rows: 28px minmax(0, 1fr) 24px;
+  grid-template-rows: 28px minmax(0, 1fr) 28px;
   grid-template-areas: "menu menu menu" "side split main" "status status status";
   min-height: 0;
 }
@@ -74,7 +74,12 @@ button,
 .app-menu button { display: flex; width: 100%; text-align: left; background: transparent; border: 0; color: var(--text); padding: 7px 10px; border-radius: 4px; }
 #side-resize { grid-area: split; cursor: col-resize; background: transparent; }
 #side-resize:hover { background: var(--orange); }
-#statusbar { grid-area: status; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; border-top: 1px solid var(--line); color: var(--muted); background: var(--elev); }
+#statusbar { grid-area: status; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 10px; border-top: 1px solid var(--line); color: var(--muted); background: var(--elev); }
+#status-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.status-end { display: flex; align-items: center; gap: 14px; flex: none; }
+#powered-by { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; white-space: nowrap; }
+#powered-by img { width: 18px; height: 18px; border-radius: 50%; display: block; }
+#powered-by:hover { color: var(--orange); }
 aside { grid-area: side; }
 main { grid-area: main; }
 aside {

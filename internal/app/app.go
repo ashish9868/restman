@@ -832,6 +832,22 @@ func (a *App) saveSettings() error {
 	return a.session.SetState("settings", string(data))
 }
 
+func (a *App) OpenURL(target string) error {
+	if !allowedSite(target) {
+		return fmt.Errorf("link is not allowed")
+	}
+	return openBrowser(target)
+}
+
+func allowedSite(target string) bool {
+	parsed, err := url.Parse(target)
+	if err != nil || parsed.Scheme != "https" {
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	return host == "d2itechnology.com" || host == "www.d2itechnology.com"
+}
+
 func openBrowser(target string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {

@@ -336,6 +336,14 @@ func (a *App) Dispatch(method string, params json.RawMessage) (any, error) {
 		}
 		a.WSClose(in.TabID)
 		return nil, nil
+	case "OpenURL":
+		var in struct {
+			URL string `json:"url"`
+		}
+		if err := json.Unmarshal(params, &in); err != nil {
+			return nil, err
+		}
+		return nil, a.OpenURL(in.URL)
 	case "WSPoll":
 		var in struct {
 			TabID string `json:"tabId"`

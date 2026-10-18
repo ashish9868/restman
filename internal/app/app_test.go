@@ -61,3 +61,12 @@ func TestConfigDir(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestAllowedSite(t *testing.T) {
+	if !allowedSite("https://d2itechnology.com/") || !allowedSite("https://www.d2itechnology.com/about") {
+		t.Fatal("company site should open")
+	}
+	if allowedSite("http://d2itechnology.com/") || allowedSite("https://example.com/") {
+		t.Fatal("other links should stay closed")
+	}
+}
