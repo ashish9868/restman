@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Restman</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="menubar">
+        <button type="button" data-menu="file">File</button>
+        <button type="button" data-menu="edit">Edit</button>
+        <button type="button" data-menu="view">View</button>
+        <button type="button" data-menu="help">Help</button>
+        <div id="menu-file" class="app-menu d-none">
+          <button type="button" id="menu-new">New request</button>
+          <button type="button" id="menu-import">Import</button>
+          <button type="button" id="menu-curl">Import cURL</button>
+          <button type="button" id="menu-save">Save</button>
+          <button type="button" id="menu-save-as">Save as</button>
+        </div>
+        <div id="menu-edit" class="app-menu d-none">
+          <button type="button" id="menu-env">Environments</button>
+          <button type="button" id="menu-globals">Globals</button>
+          <button type="button" id="menu-cookies">Cookies</button>
+          <button type="button" id="menu-settings">Settings</button>
+        </div>
+        <div id="menu-view" class="app-menu d-none">
+          <button type="button" id="zoom-in">Zoom in</button>
+          <button type="button" id="zoom-out">Zoom out</button>
+          <button type="button" id="zoom-reset">Actual size</button>
+          <button type="button" id="menu-theme">Toggle theme</button>
+        </div>
+        <div id="menu-help" class="app-menu d-none">
+          <button type="button" id="menu-shortcuts">Keyboard shortcuts</button>
+        </div>
+      </div>
+      <aside>
+        <div class="side-head">
+          <div class="brand"><span class="mark">R</span> Restman</div>
+          <button id="new-toggle" class="new-btn" type="button" title="New" aria-label="New"><i class="bi bi-plus-lg" aria-hidden="true"></i></button>
+          <div id="new-menu" class="new-menu d-none">
+            <button id="new-request" type="button"><i class="bi bi-send" aria-hidden="true"></i>HTTP request</button>
+            <button id="new-socket" type="button"><i class="bi bi-broadcast" aria-hidden="true"></i>WebSocket</button>
+            <button id="new-collection" type="button"><i class="bi bi-collection" aria-hidden="true"></i>Collection</button>
+            <button id="new-folder" type="button"><i class="bi bi-folder2" aria-hidden="true"></i>Folder</button>
+            <button id="import-collection" type="button"><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>Import</button>
+            <button id="import-curl" type="button"><i class="bi bi-terminal" aria-hidden="true"></i>Import cURL</button>
+          </div>
+        </div>
+        <div class="side-search">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input id="filter" placeholder="Search collections" />
+        </div>
+        <div class="side-tabs">
+          <button id="show-collections" class="active" type="button"><i class="bi bi-collection" aria-hidden="true"></i>Collections</button>
+          <button id="show-history" type="button"><i class="bi bi-clock-history" aria-hidden="true"></i>History</button>
+        </div>
+        <div id="collections-pane" class="side-scroll"></div>
+        <div id="history-pane" class="side-scroll d-none"></div>
+      </aside>
+      <div id="side-resize" title="Resize sidebar"></div>
+      <main>
+        <header class="topbar">
+          <div id="tabs" class="tabstrip"></div>
+          <div class="top-tools">
+            <select id="env"></select>
+            <button id="env-manage" type="button" title="Environments" aria-label="Environments"><i class="bi bi-sliders" aria-hidden="true"></i></button>
+            <button id="globals" type="button" title="Globals" aria-label="Globals"><i class="bi bi-globe2" aria-hidden="true"></i></button>
+            <button id="cookies" type="button" title="Cookies" aria-label="Cookies"><i class="bi bi-cookie" aria-hidden="true"></i></button>
+            <button id="settings" type="button" title="Settings" aria-label="Settings"><i class="bi bi-gear" aria-hidden="true"></i></button>
+            <button id="theme" type="button" title="Theme" aria-label="Theme"><i class="bi bi-moon-stars" aria-hidden="true"></i></button>
+          </div>
+        </header>
+        <div id="empty" class="empty">
+          <div class="empty-card">
+            <div class="empty-mark">R</div>
+            <h1>Create a request</h1>
+            <p>Open a collection on the left, or start with a blank request.</p>
+            <button id="empty-new" type="button"><i class="bi bi-plus-lg" aria-hidden="true"></i>New request</button>
+            <p class="hints"><kbd>Ctrl</kbd>+<kbd>N</kbd> new <kbd>Ctrl</kbd>+<kbd>Enter</kbd> send <kbd>Ctrl</kbd>+<kbd>S</kbd> save</p>
+          </div>
+        </div>
+        <div id="stage" class="d-none">
+          <div id="editor">
+            <div id="crumb" class="crumb"></div>
+            <input id="req-name" class="req-name" placeholder="Request name" spellcheck="false" />
+            <textarea id="req-doc" class="req-doc" rows="2" placeholder="Description" spellcheck="false"></textarea>
+            <div class="request-line">
+              <select id="protocol">
+                <option value="http">HTTP</option>
+                <option value="websocket">WS</option>
+              </select>
+              <select id="method">
+                <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>HEAD</option><option>OPTIONS</option>
+              </select>
+              <input id="url" placeholder="Enter URL or paste text" spellcheck="false" />
+              <button id="copy-curl" type="button" title="Copy as" aria-label="Copy as"><i class="bi bi-clipboard" aria-hidden="true"></i></button>
+              <button id="save" type="button" title="Save" aria-label="Save"><i class="bi bi-floppy" aria-hidden="true"></i><span class="save-label"></span></button>
+              <button id="cancel" class="d-none" type="button" title="Cancel" aria-label="Cancel"><i class="bi bi-stop-circle" aria-hidden="true"></i></button>
+              <div class="send-group">
+                <button id="send" type="button"><i class="bi bi-send" aria-hidden="true"></i><span id="send-label">Send</span></button>
+                <button id="send-menu" type="button" title="Send options" aria-label="Send options"><i class="bi bi-chevron-down" aria-hidden="true"></i></button>
+              </div>
+            </div>
+            <div class="subtabs" id="subtabs">
+              <button class="text-tab active" data-panel="params" type="button"><i class="bi bi-list-ul" aria-hidden="true"></i>Params</button>
+              <button class="text-tab" data-panel="variables" type="button"><i class="bi bi-braces" aria-hidden="true"></i>Variables</button>
+              <button class="text-tab" data-panel="auth" type="button"><i class="bi bi-key" aria-hidden="true"></i>Authorization</button>
+              <button class="text-tab" data-panel="headers" type="button"><i class="bi bi-card-heading" aria-hidden="true"></i>Headers</button>
+              <button class="text-tab" data-panel="body" type="button"><i class="bi bi-file-text" aria-hidden="true"></i>Body</button>
+              <button class="text-tab" data-panel="scripts" type="button"><i class="bi bi-code-slash" aria-hidden="true"></i>Scripts</button>
+              <button class="text-tab" data-panel="settings" type="button"><i class="bi bi-sliders" aria-hidden="true"></i>Settings</button>
+            </div>
+            <section id="panel-params" class="panel"></section>
+            <section id="panel-variables" class="panel d-none"></section>
+            <section id="panel-auth" class="panel d-none"></section>
+            <section id="panel-headers" class="panel d-none"></section>
+            <section id="panel-body" class="panel d-none"></section>
+            <section id="panel-scripts" class="panel d-none"></section>
+            <section id="panel-settings" class="panel d-none"></section>
+          </div>
+          <div id="split"></div>
+          <section id="response" class="response">
+            <div class="response-meta">
+              <strong id="status">Ready</strong>
+              <span id="timing"></span>
+              <span id="size"></span>
+              <button id="save-body" type="button"><i class="bi bi-download" aria-hidden="true"></i>Save body</button>
+              <button id="save-example" type="button"><i class="bi bi-bookmark" aria-hidden="true"></i>Save example</button>
+              <button id="copy-body" type="button" title="Copy body" aria-label="Copy body"><i class="bi bi-clipboard" aria-hidden="true"></i></button>
+              <div class="body-view">
+                <button type="button" data-view="pretty" class="active">Pretty</button>
+                <button type="button" data-view="raw">Raw</button>
+                <button type="button" data-view="preview">Preview</button>
+              </div>
+            </div>
+            <div class="subtabs" id="response-tabs">
+              <button class="text-tab active" data-rpanel="body" type="button"><i class="bi bi-file-text" aria-hidden="true"></i>Body</button>
+              <button class="text-tab" data-rpanel="headers" type="button"><i class="bi bi-card-heading" aria-hidden="true"></i>Headers</button>
+              <button class="text-tab" data-rpanel="cookies" type="button"><i class="bi bi-cookie" aria-hidden="true"></i>Cookies</button>
+              <button class="text-tab" data-rpanel="tests" type="button"><i class="bi bi-check2-circle" aria-hidden="true"></i>Test Results</button>
+              <button class="text-tab" data-rpanel="socket" type="button"><i class="bi bi-chat-left-text" aria-hidden="true"></i>Messages</button>
+            </div>
+            <div id="rpanel-body" class="response-body">
+              <input id="body-find" placeholder="Find in response" />
+              <div id="response-editor" class="cm-host"></div>
+              <iframe id="response-preview" class="d-none" sandbox=""></iframe>
+            </div>
+            <div id="rpanel-headers" class="response-body d-none"></div>
+            <div id="rpanel-cookies" class="response-body d-none"></div>
+            <div id="rpanel-tests" class="response-body d-none"></div>
+            <div id="rpanel-socket" class="response-body d-none">
+              <div id="ws-log"></div>
+              <div class="ws-compose">
+                <input id="ws-input" placeholder="Message" />
+                <label class="ws-binary"><input id="ws-binary" type="checkbox" /> Binary</label>
+                <button id="ws-send" type="button" title="Send" aria-label="Send"><i class="bi bi-send" aria-hidden="true"></i></button>
+                <button id="ws-close" type="button" title="Close" aria-label="Close"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+      <footer id="statusbar"><span id="status-path"></span><span id="status-zoom">100%</span></footer>
+    </div>
+    <div id="ctx" class="ctx-menu d-none"></div>
+    <div id="toast" class="toast-note d-none" role="alert"><span id="toast-text"></span></div>
+    <div id="modal" class="rest-modal d-none"><div id="modal-card" class="rest-modal-card"></div></div>
+    <input id="file" type="file" accept="application/json,.json" hidden />
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

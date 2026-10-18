@@ -1,0 +1,24 @@
+{
+  "name": "restman-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@codemirror/lang-html": "^6.4.9",
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-php": "^6.0.2",
+    "@codemirror/lang-xml": "^6.1.0",
+    "@codemirror/legacy-modes": "^6.5.5",
+    "@codemirror/theme-one-dark": "^6.1.2",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.13.2",
+    "codemirror": "^6.0.1"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}

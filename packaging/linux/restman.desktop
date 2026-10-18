@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Restman
+Comment=Local API client
+Exec=restman
+Icon=restman
+Terminal=false
+Type=Application
+Categories=Development;Network;
+StartupWMClass=restman

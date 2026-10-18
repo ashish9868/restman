@@ -1,0 +1,9 @@
+.tools/
+bin/
+frontend/node_modules/
+frontend/dist/
+.tmp-config/
+.tmp-home/
+release/
+*.db
+*.db-journal
