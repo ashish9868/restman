@@ -29,13 +29,16 @@ jobs:
       - name: Install packaging tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev pkg-config dpkg-dev zip nsis
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev pkg-config dpkg-dev zip nsis osslsigncode
 
       - name: Use the tag as the version
         if: startsWith(github.ref, 'refs/tags/v')
         run: printf '%s\n' "${GITHUB_REF_NAME#v}" > VERSION
 
       - name: Build packages
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: ./scripts/package.sh
 
       - uses: actions/upload-artifact@v4
@@ -57,19 +60,27 @@ jobs:
     needs: packages
     runs-on: macos-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: restman-darwin
           path: release
 
       - name: Build a universal disk image
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: |
           set -euo pipefail
           cd release
           archive=$(ls restman_*_darwin_arm64.tar.gz)
           version=${archive#restman_}
           version=${version%_darwin_arm64.tar.gz}
-          mkdir -p stage/arm stage/amd stage/universal
+          mkdir -p stage/arm stage/amd
           tar -xzf "restman_${version}_darwin_arm64.tar.gz" -C stage/arm
           tar -xzf "restman_${version}_darwin_amd64.tar.gz" -C stage/amd
           app=stage/universal/Restman.app
@@ -80,9 +91,9 @@ jobs:
             stage/arm/Restman.app/Contents/MacOS/restman \
             -output "$app/Contents/MacOS/restman"
           chmod 755 "$app/Contents/MacOS/restman"
-          hdiutil create -volname Restman -srcfolder "$app" -ov -format UDZO \
-            "restman_${version}_darwin_universal.dmg"
-          rm -rf stage
+          cd ..
+          ./scripts/make-dmg.sh "release/$app" "release/restman_${version}_darwin_universal.dmg"
+          rm -rf release/stage
 
       - uses: actions/upload-artifact@v4
         with:

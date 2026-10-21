@@ -5,5 +5,7 @@ frontend/dist/
 .tmp-config/
 .tmp-home/
 release/
+rsrc_windows_amd64.syso
 *.db
 *.db-journal
+./gocache

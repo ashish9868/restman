@@ -76,48 +76,36 @@ Build the `.deb` on Linux. The native window links WebKitGTK, so it is not cross
 
 ## Windows
 
-Unzip `restman_<version>_windows_amd64.zip` and run `Restman\Restman.exe`. The zip keeps `Restman.exe` beside `frontend\dist`, which is the layout the program expects.
+Run `restman_<version>_windows_amd64_setup.exe`. The wizard asks for a folder, defaults to `C:\Program Files\Restman`, and adds Start menu and desktop shortcuts. Windows lists it under Settings, Apps, and the uninstaller removes the shortcuts and the registry entry.
 
-With NSIS installed, the same script writes `restman_<version>_windows_amd64_setup.exe`. That installer copies the program to `C:\Program Files\Restman` and adds Start menu and desktop shortcuts. Compile the script by hand from a staged folder with:
+The zip is the portable layout: `Restman.exe` beside `frontend\dist`. It does not install into Program Files.
 
-```bash
-makensis packaging/windows/restman.nsi
-```
+`@OUTFILE@`, `@VERSION@`, and `@VERSION4@` in `packaging/windows/restman.nsi` are replaced when `scripts/package.sh` runs.
 
-`@OUTFILE@` in that `.nsi` is replaced when `scripts/package.sh` runs. Sign the setup executable on a Windows machine before a public download:
+SmartScreen flags an unsigned download. Add these Actions secrets and publish a new tag so the workflow can Authenticode-sign `Restman.exe` and the setup executable:
 
-```powershell
-signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 Restman-setup.exe
-```
+- `WINDOWS_CERTIFICATE_BASE64`, the code-signing certificate exported as a `.pfx` and base64-encoded
+- `WINDOWS_CERTIFICATE_PASSWORD`
+
+The build machine needs `osslsigncode`. Until those secrets are set, the installer still installs into Program Files, and the first open needs confirmation in SmartScreen.
 
 ## macOS
 
-Each archive contains `Restman.app`. On a Mac:
+Each archive contains `Restman.app`. Intel Macs use the `darwin_amd64` archive. Apple silicon uses `darwin_arm64`.
 
-```bash
-tar -xzf restman_0.1.0_darwin_arm64.tar.gz
-open Restman.app
-```
+The disk image is the installer. It shows Restman, an Applications folder, and the words “Drag Restman to the Applications folder.” Opening the app from a disk image or the Downloads folder asks to move it into Applications and then relaunches that copy.
 
-Intel Macs use the `darwin_amd64` archive. Apple silicon uses `darwin_arm64`.
+`./scripts/package.sh darwin` writes the archives. On a Mac it also writes a disk image per architecture. The GitHub release builds one universal app with `lipo` and then runs `scripts/make-dmg.sh`.
 
-To ship one universal app and a disk image, do this on a Mac after producing both binaries (or after extracting both apps and replacing the executable):
+macOS flags a download that is not notarized. Add these Actions secrets and publish a new tag so the release workflow can sign with a Developer ID, notarize the disk image, and staple the ticket:
 
-```bash
-lipo -create restman-amd64 restman-arm64 -output Restman.app/Contents/MacOS/restman
-hdiutil create -volname Restman -srcfolder Restman.app -ov -format UDZO restman_0.1.0_darwin_universal.dmg
-```
+- `APPLE_CERTIFICATE_BASE64`, the Developer ID Application certificate exported as a `.p12` and base64-encoded
+- `APPLE_CERTIFICATE_PASSWORD`
+- `APPLE_ID`
+- `APPLE_TEAM_ID`
+- `APPLE_APP_PASSWORD`, an app-specific password for `notarytool`
 
-`./scripts/package.sh darwin` runs `hdiutil` itself when that command exists, and writes a `.dmg` next to the tar archive.
-
-Sign and notarize on a Mac before distribution outside your own machines:
-
-```bash
-codesign --force --deep --sign "Developer ID Application: Your Name" Restman.app
-ditto -c -k --keepParent Restman.app Restman.zip
-xcrun notarytool submit Restman.zip --keychain-profile "notary" --wait
-xcrun stapler staple Restman.app
-```
+Until those are set, the disk image still installs by dragging Restman to Applications. The first open needs confirmation in Privacy & Security.
 
 ## Where data lives
 

@@ -53,6 +53,10 @@ sudo apt install ./restman_1.0.0_linux_amd64.deb
 restman
 ```
 
+On a Mac, open the disk image and drag Restman onto the Applications folder. The first launch from anywhere else asks to move it there.
+
+On Windows, run the setup executable. It installs Restman into Program Files and adds a Start menu shortcut.
+
 The first launch creates a workspace at `~/Restman` (`%USERPROFILE%\Restman` on Windows).
 
 ## Build

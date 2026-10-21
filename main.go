@@ -19,6 +19,9 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1:8787", "loopback address for the local UI")
 	workspace := flag.String("workspace", "", "workspace directory (default ~/Restman)")
 	flag.Parse()
+	if offerMoveToApplications() {
+		return
+	}
 
 	dataDir, err := session.ConfigDir()
 	if err != nil {

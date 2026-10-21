@@ -96,24 +96,116 @@ EOF
   echo "Wrote $deb"
 }
 
+windows_version4() {
+  local ver="$1" n
+  n="$(awk -F. '{print NF}' <<<"$ver")"
+  case "$n" in
+    4) printf '%s\n' "$ver" ;;
+    3) printf '%s.0\n' "$ver" ;;
+    2) printf '%s.0.0\n' "$ver" ;;
+    1) printf '%s.0.0.0\n' "$ver" ;;
+    *) printf '0.0.0.0\n' ;;
+  esac
+}
+
+attach_windows_resources() {
+  local syso="$ROOT/rsrc_windows_amd64.syso"
+  local ver4 major minor patch build json manifest
+  rm -f "$syso"
+  ver4="$(windows_version4 "$VERSION")"
+  IFS=. read -r major minor patch build <<<"$ver4"
+  json="$STAGE/versioninfo.json"
+  manifest="$STAGE/restman.manifest"
+  mkdir -p "$STAGE"
+  sed "s/@VERSION4@/${ver4}/g" "$ROOT/packaging/windows/restman.manifest" >"$manifest"
+  cat >"$json" <<EOF
+{
+  "FixedFileInfo": {
+    "FileVersion": {"Major": ${major}, "Minor": ${minor}, "Patch": ${patch}, "Build": ${build}},
+    "ProductVersion": {"Major": ${major}, "Minor": ${minor}, "Patch": ${patch}, "Build": ${build}},
+    "FileFlagsMask": "3f",
+    "FileFlags ": "00",
+    "FileOS": "040004",
+    "FileType": "01",
+    "FileSubType": "00"
+  },
+  "StringFileInfo": {
+    "CompanyName": "D2i Technology",
+    "FileDescription": "Restman",
+    "FileVersion": "${VERSION}",
+    "InternalName": "Restman",
+    "LegalCopyright": "D2i Technology",
+    "OriginalFilename": "Restman.exe",
+    "ProductName": "Restman",
+    "ProductVersion": "${VERSION}"
+  },
+  "VarFileInfo": {
+    "Translation": {"LangID": "0409", "CharsetID": "04B0"}
+  },
+  "IconPath": "${ROOT}/packaging/windows/restman.ico",
+  "ManifestPath": "${manifest}"
+}
+EOF
+  if ! go run github.com/josephspurrier/goversioninfo/cmd/goversioninfo@v1.4.1 -64 -o "$syso" "$json"; then
+    echo "Restman.exe will have no Windows icon." >&2
+    rm -f "$syso"
+  fi
+}
+
+sign_windows() {
+  local file="$1"
+  local desc="$2"
+  local pfx signed
+  if [[ -z "${WINDOWS_CERTIFICATE_BASE64:-}" || -z "${WINDOWS_CERTIFICATE_PASSWORD:-}" ]]; then
+    echo "No Authenticode certificate is configured. SmartScreen will flag $(basename "$file")."
+    return 0
+  fi
+  if ! command -v osslsigncode >/dev/null 2>&1; then
+    echo "osslsigncode is not installed, so $(basename "$file") was not signed." >&2
+    return 1
+  fi
+  pfx="$(mktemp)"
+  signed="$(mktemp --suffix=.exe)"
+  P12="$pfx" python3 - <<'PY'
+import base64, os, pathlib
+pathlib.Path(os.environ["P12"]).write_bytes(base64.b64decode(os.environ["WINDOWS_CERTIFICATE_BASE64"]))
+PY
+  osslsigncode sign -pkcs12 "$pfx" -pass "$WINDOWS_CERTIFICATE_PASSWORD" \
+    -n "$desc" -i "https://d2itechnology.com/" -h sha256 \
+    -ts "http://timestamp.digicert.com" \
+    -in "$file" -out "$signed"
+  rm -f "$pfx"
+  mv "$signed" "$file"
+}
+
 package_windows() {
   local parent="$STAGE/winroot"
   local app="$parent/Restman"
-  local zip setup nsi
+  local zip setup nsi ver4
   rm -rf "$parent"
   mkdir -p "$app"
   echo "Building Windows amd64"
-  CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o "$app/Restman.exe" .
+  attach_windows_resources
+  if ! CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o "$app/Restman.exe" .; then
+    rm -f "$ROOT/rsrc_windows_amd64.syso"
+    return 1
+  fi
+  rm -f "$ROOT/rsrc_windows_amd64.syso"
+  sign_windows "$app/Restman.exe" "Restman"
   copy_ui "$app/frontend/dist"
+  cp "$ROOT/packaging/windows/restman.ico" "$app/restman.ico"
   zip="$OUT/restman_${VERSION}_windows_amd64.zip"
   rm -f "$zip"
   (cd "$parent" && zip -r "$zip" Restman)
   echo "Wrote $zip"
   setup="$OUT/restman_${VERSION}_windows_amd64_setup.exe"
   nsi="$app/restman.nsi"
-  sed "s|@OUTFILE@|${setup}|g" "$ROOT/packaging/windows/restman.nsi" >"$nsi"
+  ver4="$(windows_version4 "$VERSION")"
+  sed -e "s|@OUTFILE@|${setup}|g" -e "s|@VERSION@|${VERSION}|g" -e "s|@VERSION4@|${ver4}|g" \
+    "$ROOT/packaging/windows/restman.nsi" >"$nsi"
   if command -v makensis >/dev/null 2>&1; then
     (cd "$app" && makensis restman.nsi)
+    sign_windows "$setup" "Restman Setup"
     echo "Wrote $setup"
   else
     echo "makensis is not installed. The zip is the Windows package. Install NSIS and re-run to build the setup exe."
@@ -130,6 +222,7 @@ package_darwin() {
   echo "Building macOS $arch"
   CGO_ENABLED=0 GOOS=darwin GOARCH="$arch" go build -trimpath -ldflags "-s -w" -o "$app/Contents/MacOS/restman" .
   sed "s/@VERSION@/${VERSION}/g" "$ROOT/packaging/macos/Info.plist" >"$app/Contents/Info.plist"
+  cp "$ROOT/packaging/macos/restman.icns" "$app/Contents/Resources/restman.icns"
   copy_ui "$app/Contents/Resources/frontend/dist"
   chmod 755 "$app/Contents/MacOS/restman"
   archive="$OUT/restman_${VERSION}_darwin_${arch}.tar.gz"
@@ -137,8 +230,7 @@ package_darwin() {
   echo "Wrote $archive"
   if command -v hdiutil >/dev/null 2>&1; then
     dmg="$OUT/restman_${VERSION}_darwin_${arch}.dmg"
-    hdiutil create -volname Restman -srcfolder "$app" -ov -format UDZO "$dmg"
-    echo "Wrote $dmg"
+    "$ROOT/scripts/make-dmg.sh" "$app" "$dmg"
   fi
 }
 
