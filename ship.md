@@ -7,14 +7,14 @@ From a Linux machine the script produces:
 | File | What it is |
 | --- | --- |
 | `restman_<version>_linux_<arch>.deb` | Debian package. Native GTK window. |
-| `restman_<version>_windows_amd64.zip` | Portable Windows folder. Opens the system browser. |
+| `restman_<version>_windows_amd64.zip` | Portable Windows folder. Native WebView2 window. |
 | `restman_<version>_windows_amd64_setup.exe` | NSIS installer. Written when `makensis` is installed. |
-| `restman_<version>_darwin_amd64.tar.gz` | macOS app for Intel. Opens the system browser. |
-| `restman_<version>_darwin_arm64.tar.gz` | macOS app for Apple silicon. Opens the system browser. |
+| `restman_<version>_darwin_amd64.tar.gz` | macOS app for Intel. Native WebKit window. |
+| `restman_<version>_darwin_arm64.tar.gz` | macOS app for Apple silicon. Native WebKit window. |
 | `restman_<version>_darwin_<arch>.dmg` | Disk image. Written when the script runs on a Mac (`hdiutil`). |
 | `SHA256SUMS` | Checksums of the files above. |
 
-Linux is a GTK 3 and WebKitGTK 4.1 window. Windows and macOS builds launch the same local UI in the system browser. Save and open dialogs are part of the GTK window, so those builds use the browser download for collection export.
+Linux is a GTK 3 and WebKitGTK 4.1 window. Windows is a WebView2 window, and macOS is a WKWebView window. The macOS app is compiled on a Mac because that window links Cocoa and WebKit. Windows 11 includes the WebView2 runtime. Windows 10 needs the Evergreen runtime from Microsoft.
 
 ## Prepare the machine
 

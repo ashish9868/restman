@@ -82,8 +82,9 @@ PY
     echo "The certificate has no Developer ID Application identity." >&2
     exit 1
   fi
-  codesign --force --options runtime --timestamp --sign "$identity" --keychain "$KEYCHAIN" "$app/Contents/MacOS/restman"
-  codesign --force --options runtime --timestamp --sign "$identity" --keychain "$KEYCHAIN" "$app"
+  local entitlements="$ROOT/packaging/macos/entitlements.plist"
+  codesign --force --options runtime --timestamp --entitlements "$entitlements" --sign "$identity" --keychain "$KEYCHAIN" "$app/Contents/MacOS/restman"
+  codesign --force --options runtime --timestamp --entitlements "$entitlements" --sign "$identity" --keychain "$KEYCHAIN" "$app"
   codesign --verify --verbose=2 "$app"
   if [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_PASSWORD:-}" ]]; then
     NOTARIZE=1

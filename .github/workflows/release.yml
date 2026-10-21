@@ -49,26 +49,29 @@ jobs:
             release/restman_*
             release/SHA256SUMS
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: restman-darwin
-          if-no-files-found: error
-          path: release/restman_*_darwin_*.tar.gz
-
   dmg:
-    name: macOS disk image
-    needs: packages
+    name: macOS app and disk image
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/setup-go@v5
         with:
-          name: restman-darwin
-          path: release
+          go-version-file: go.mod
 
-      - name: Build a universal disk image
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Use the tag as the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: printf '%s\n' "${GITHUB_REF_NAME#v}" > VERSION
+
+      - name: Build the native macOS app and disk image
         env:
+          RESTMAN_SKIP_DMG: "1"
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -76,6 +79,7 @@ jobs:
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: |
           set -euo pipefail
+          ./scripts/package.sh darwin
           cd release
           archive=$(ls restman_*_darwin_arm64.tar.gz)
           version=${archive#restman_}
@@ -94,6 +98,18 @@ jobs:
           cd ..
           ./scripts/make-dmg.sh "release/$app" "release/restman_${version}_darwin_universal.dmg"
           rm -rf release/stage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: restman-darwin
+          if-no-files-found: error
+          path: release/restman_*_darwin_*.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: restman-dmg
+          if-no-files-found: error
+          path: release/restman_*_darwin_universal.dmg
 
       - uses: actions/upload-artifact@v4
         with:
@@ -116,6 +132,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: restman-packages
+          path: release
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: restman-darwin
           path: release
 
       - uses: actions/download-artifact@v4

@@ -29,7 +29,7 @@ Response status, timing, and size.
 - Copy a request as cURL, JavaScript, Python, Go, and other languages.
 - Connect a WebSocket and inspect timing, cookies, and history.
 
-Linux opens a native window. The Windows and macOS builds open the same UI in the system browser.
+Linux, Windows, and macOS each open Restman in its own window. Windows uses the Edge WebView2 runtime, which is included with Windows 11.
 
 ## Download
 

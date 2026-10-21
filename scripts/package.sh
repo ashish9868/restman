@@ -186,7 +186,7 @@ package_windows() {
   mkdir -p "$app"
   echo "Building Windows amd64"
   attach_windows_resources
-  if ! CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o "$app/Restman.exe" .; then
+  if ! CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -H windowsgui" -o "$app/Restman.exe" .; then
     rm -f "$ROOT/rsrc_windows_amd64.syso"
     return 1
   fi
@@ -216,11 +216,36 @@ package_darwin() {
   local arch="$1"
   local stage="$STAGE/darwin-$arch"
   local app="$stage/Restman.app"
-  local archive dmg
+  local archive dmg clang_arch host_arch
+  if [[ "$(uname -s)" != "Darwin" ]]; then
+    echo "Build the macOS app on a Mac. The window uses Cocoa and WebKit." >&2
+    return 1
+  fi
   rm -rf "$stage"
   mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources/frontend/dist"
   echo "Building macOS $arch"
-  CGO_ENABLED=0 GOOS=darwin GOARCH="$arch" go build -trimpath -ldflags "-s -w" -o "$app/Contents/MacOS/restman" .
+  case "$arch" in
+    amd64) clang_arch=x86_64 ;;
+    arm64) clang_arch=arm64 ;;
+    *)
+      echo "unsupported macOS architecture $arch" >&2
+      return 1
+      ;;
+  esac
+  case "$(uname -m)" in
+    x86_64) host_arch=x86_64 ;;
+    arm64) host_arch=arm64 ;;
+    *) host_arch="$(uname -m)" ;;
+  esac
+  export CGO_ENABLED=1
+  export CGO_CFLAGS="-mmacosx-version-min=12.0"
+  export CGO_LDFLAGS="-mmacosx-version-min=12.0"
+  export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+  if [[ "$clang_arch" != "$host_arch" ]]; then
+    export CGO_CFLAGS="$CGO_CFLAGS -target ${clang_arch}-apple-macos12.0"
+    export CGO_LDFLAGS="$CGO_LDFLAGS -target ${clang_arch}-apple-macos12.0"
+  fi
+  GOOS=darwin GOARCH="$arch" go build -trimpath -ldflags "-s -w" -o "$app/Contents/MacOS/restman" .
   sed "s/@VERSION@/${VERSION}/g" "$ROOT/packaging/macos/Info.plist" >"$app/Contents/Info.plist"
   cp "$ROOT/packaging/macos/restman.icns" "$app/Contents/Resources/restman.icns"
   copy_ui "$app/Contents/Resources/frontend/dist"
@@ -228,7 +253,7 @@ package_darwin() {
   archive="$OUT/restman_${VERSION}_darwin_${arch}.tar.gz"
   tar -C "$stage" -czf "$archive" Restman.app
   echo "Wrote $archive"
-  if command -v hdiutil >/dev/null 2>&1; then
+  if [[ "${RESTMAN_SKIP_DMG:-}" != 1 ]] && command -v hdiutil >/dev/null 2>&1; then
     dmg="$OUT/restman_${VERSION}_darwin_${arch}.dmg"
     "$ROOT/scripts/make-dmg.sh" "$app" "$dmg"
   fi
@@ -239,8 +264,12 @@ case "$TARGET" in
 all)
   package_linux
   package_windows
-  package_darwin amd64
-  package_darwin arm64
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    package_darwin amd64
+    package_darwin arm64
+  else
+    echo "macOS packages are built on a Mac so Restman can open a native window."
+  fi
   ;;
 linux) package_linux ;;
 windows) package_windows ;;
