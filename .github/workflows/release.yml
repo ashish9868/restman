@@ -111,12 +111,6 @@ jobs:
           if-no-files-found: error
           path: release/restman_*_darwin_universal.dmg
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: restman-dmg
-          if-no-files-found: error
-          path: release/*.dmg
-
   publish:
     name: Publish GitHub release
     needs: [packages, dmg]
